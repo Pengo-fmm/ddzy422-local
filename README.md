@@ -63,6 +63,11 @@ The bits that took reverse-engineering (so you don't have to):
    `bytes.fromhex()`.
 4. The channel is **flaky** (`+ERR=-1`, `+ok=no data`, or silence happen): send a
    short "drain" read of the socket before each request and **retry** a few times.
+5. ⚠️ **Always validate the Modbus CRC of the response.** The AT channel will hand you
+   *corrupted frames that still look structurally valid* (right slave id, right function
+   code, right length). Without the CRC check you silently get garbage values — typically
+   near `2**31/100` (≈21,474,836) — and if you feed those into a `total_increasing` sensor
+   (Home Assistant, etc.) they destroy your energy statistics permanently. Ask me how I know.
 
 ### Register map (from the official iGEN doc `HT-YF2018-0929-01`)
 

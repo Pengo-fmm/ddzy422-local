@@ -103,9 +103,19 @@ class DDZY422:
                     raw = bytes.fromhex(d[4:].replace(b"\x10", b"").rstrip(b"\r\n").decode())
                 except ValueError:
                     continue
-                if len(raw) >= 3 + raw[2] and raw[0] == self.slave and raw[1] == 3:
-                    body = raw[3:3 + raw[2]]
-                    return [struct.unpack(">H", body[i:i + 2])[0] for i in range(0, len(body), 2)]
+                if len(raw) < 5 or raw[0] != self.slave or raw[1] != 3:
+                    continue
+                end = 3 + raw[2]
+                if len(raw) < end + 2:
+                    continue
+                # Validate the Modbus CRC. The AT channel is flaky and WILL hand you
+                # corrupted frames that otherwise look structurally fine; without this
+                # check you get garbage values (e.g. near 2**31/100), which silently
+                # destroy any total_increasing statistics downstream. Learned the hard way.
+                if crc16(raw[:end]) != raw[end:end + 2]:
+                    continue
+                body = raw[3:end]
+                return [struct.unpack(">H", body[i:i + 2])[0] for i in range(0, len(body), 2)]
             time.sleep(1.0)
         return None
 
