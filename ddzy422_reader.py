@@ -105,6 +105,14 @@ class DDZY422:
                     continue
                 if len(raw) < 5 or raw[0] != self.slave or raw[1] != 3:
                     continue
+                # The reply must carry the registers that were asked for. Now and then
+                # the module answers with the reply to a different request (seen: the
+                # 14-register instantaneous block returned for the energy request). The
+                # frame and its CRC are valid, the content is not: decoded as energy it
+                # gives import = voltage / 10.
+                if raw[2] != 2 * count:
+                    time.sleep(0.5)
+                    continue
                 end = 3 + raw[2]
                 if len(raw) < end + 2:
                     continue

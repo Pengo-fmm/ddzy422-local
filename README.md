@@ -68,6 +68,14 @@ The bits that took reverse-engineering (so you don't have to):
    code, right length). Without the CRC check you silently get garbage values — typically
    near `2**31/100` (≈21,474,836) — and if you feed those into a `total_increasing` sensor
    (Home Assistant, etc.) they destroy your energy statistics permanently. Ask me how I know.
+6. ⚠️ **Check that the reply has the number of registers you asked for** (byte count
+   = 2 × count). Now and then the module answers a request with the reply to a different
+   one: valid frame, valid CRC, wrong content. On my meter the energy request (`0x000E`,
+   20 registers) got the 14-register instantaneous block back ten times in two weeks, at
+   one poll every 15 s. Decoded as energy, that reads import = voltage ÷ 10 (23.03 kWh at
+   230.3 V). On a `total_increasing` sensor the drop is ignored or taken as a reset, and
+   the climb back to the real value is counted as energy. The reader rejects these
+   replies and asks again. If you publish the totals, also check that they never go down.
 
 ### Register map (from the official iGEN doc `HT-YF2018-0929-01`)
 
